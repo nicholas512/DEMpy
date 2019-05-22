@@ -1,4 +1,3 @@
-# NTS
-Determine NTS tile sheets from coordinates
+# DEMpy
 
-Ported from R using code from: github.com/paleolimbot/rcanvec (/R/ntstiles.R)
+Find, download and tile DEM sheets based on areal extents or coordinates
