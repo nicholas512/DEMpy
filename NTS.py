@@ -389,3 +389,17 @@ class nts:
         result = N._bbox(ntsid)
         return(result)
     
+def valid_nts_tiles(tilesfile, return_50k = False):
+    
+    t50k = np.loadtxt(tilesfile, dtype='str')
+    
+    if return_50k:
+        out = t50k
+    else:
+        t250k = np.unique([t[0:4] for t in t50])
+        out = t250k
+    
+    return(out)
+    
+
+
