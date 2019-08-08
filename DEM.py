@@ -1,11 +1,22 @@
+""" 
+This file contains functions to download and mosaic DEM tiles from a 
+variety of providers 
+
+code: Nick Brown, 2018, Water Survey of Canada
+"""
+
+import gdal
+import glob
+import itertools
+import ogr
+import osr
+import os
 import re
 import tarfile
 import zipfile
-import glob
-import gdal
-import ogr
-import osr
-import itertools
+
+import requests
+import netrc
 
 import numpy as np
 import urllib.request
@@ -209,10 +220,23 @@ class SessionWithHeaderRedirection(requests.Session):
         return
         
             
-def downloadSRTM(url, destfile, username=None, password=None, retry=3):
+def downloadSRTM(url, destfile, username=None, password=None, retry=5):
     """
-    Downloads an SRTM tile.  Requires a netrc file in your home directory 
-    (named either '_netrc' or '.netrc')
+    Downloads an SRTM tile.  
+    Parameters
+    ----------
+    url : str
+        path to SRTM tile
+    username : str (optional)
+        USGS Earthdata username. If missing, looks for the existence of a .netrc
+        file in your home directory 
+    password : str (optional)
+        USGS Earthdata username. If missing, looks for the existence of a .netrc
+        file in your home directory 
+    retry : int
+        how many times to retry downloading
+    If username / password are not provided, the function requires a netrc
+     file in your home directory (named either '_netrc' or '.netrc')
     with the following contents:
     machine <hostname>
     login <login>
@@ -413,7 +437,7 @@ def download_multiple_DEM(DEM, DEM_dir, product="NED"):
     files = [dem for sublist in files for dem in sublist]
     return(files)
         
-def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", ellipsoidal=False,
+def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", 
                         vrt_only=False, format="GTiff"):
     """ Create a Mosaic from a list of DEM urls or NTS tiles. Missing tiles will
     be downloaded """
@@ -429,17 +453,11 @@ def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", ellipsoidal=False,
     
     # return VRT-only if desired
     if vrt_only:
-        if ellipsoidal:
-            raise Exception("Cannot convert VRT to ellipsoidal heights")
         return(VRT_path)
     
     # set warp parameters
-    if ellipsoidal:
-        wo = gdal.WarpOptions(srcSRS=DEMproj4(product),  dstSRS='epsg: 4623',
-                                format=format)
-        ds = gdal.Warp(dstfile,  VRT_path, options=wo)
-    else:
-        ds = gdal.Translate(dstfile, VRT_path, format=format)
+
+    ds = gdal.Translate(dstfile, VRT_path, format=format)
 
     ds.FlushCache()
     ds = None
@@ -448,7 +466,7 @@ def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", ellipsoidal=False,
     return(dstfile)
     
 def SRTM_tiles_from_extent(ext):
-    return degree_tiles_from_extent(ext, SRTM_tile_name)
+    return degree_tiles_from_extent(ext, SRTM_tile_name, yoff=-1)
 
 def NED_tiles_from_extent(ext):
     """ Get a list of NED tiles required to cover a spatial extent 
@@ -489,14 +507,16 @@ def NED_tiles_from_extent(ext):
     # return(tiles)
     
     
-def degree_tiles_from_extent(ext, tile_function):
-    """ Get a list of NED tiles required to cover a spatial extent 
+def degree_tiles_from_extent(ext, tile_function, xoff=0, yoff=0):
+    """ Get a list of raster tiles required to cover a spatial extent 
     
     Parameters
     ----------
     ext : dict
         Dictionary with the following keys: {xmin, xmax, ymin, ymax} corresponding
         to the spatial extent in WGS84 decimal degrees 
+    tile_function : function
+        function that takes lon, lat as keyword arguments and returns tile name
     
     Returns
     -------
@@ -517,8 +537,12 @@ def degree_tiles_from_extent(ext, tile_function):
     
     # get all corner coordinates to cover extent
             # +1 beacuse of 0 indexing 
-    xrange = range(int(np.floor(xmin)), int(np.floor(xmax)) +1) 
-    yrange = range(int(np.ceil(ymin)), int(np.ceil(ymax)) +1)
+    xrange = range(int(np.floor(xmin)), int(np.floor(xmax)) + 1) 
+    yrange = range(int(np.ceil(ymin)), int(np.ceil(ymax)) + 1)
+    
+    xrange = [x + xoff for x in xrange]
+    yrange = [y + yoff for y in yrange]
+    
     pts = itertools.product(xrange, yrange)
   
     # get tile index for all 
@@ -540,7 +564,7 @@ def NTS_tiles_from_extent(ext, scale=1):
         
     Examples
     --------
-        ext = {'xmin': 52, 'xmax': 53, 'ymin' : -114, 'ymax' : -112}
+        ext = {'ymin': 52, 'ymax': 53, 'xmin' : -114, 'xmax' : -112}
         NTS_tiles_from_extent(ext)
     '''
     # unpack extent dictionary
@@ -624,7 +648,7 @@ def get_spatial_extent(raster_path, target_EPSG = 4326, tol=0.1):
     return(ext)
     
 def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED", 
-                                    vrt_only=False, ellipsoidal=False):
+                                    vrt_only=False):
     """ Generate DEM mosaic covering a extent
     
     Parameters
@@ -640,7 +664,7 @@ def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED",
         DEM source to use. One of ("NED", "CDED"). 
     vrt_only : boolean  
         Whether to create a VRT as an output file or 
-    ellipsoidal : boolean
+  
         
     Returns
     -------
@@ -656,8 +680,7 @@ def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED",
                                   dstfile = path.join(home, 'mosaic.tif'),
                                   DEM_dir = path.join(home, 'DEM'),
                                   product = "CDED",
-                                  vrt_only = False,
-                                  ellipsoidal = True)
+                                  vrt_only = False)
     """ 
     
     # 
@@ -672,8 +695,7 @@ def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED",
     
     # create mosaic
     mosaic = create_DEM_mosaic(DEM = tiles, DEM_dir=DEM_dir, dstfile=dstfile, 
-                                product=product, vrt_only=vrt_only, 
-                                ellipsoidal=ellipsoidal)
+                                product=product, vrt_only=vrt_only)
     
     return(mosaic)
   
@@ -696,5 +718,34 @@ def gdalslope(DEM, dst, latlon = True):
 def gdalTPI(DEM, dst, latlon = True):
     gdal.DEMProcessing(dst, DEM, "TPI") 
 
+def egm96_to_wgs84_heights(dem, geoid):
     
+    """
+    Convert heights above the EGM96 geoid to heights above the WGS84 ellipsoid,
+    for example, as required to use the RADARSAT-2 rational function model.
+    
+    
+    """
+    dem_ds = gdal.Open(dem, gdal.GA_Update)
+    # Load the EGM96 dataset (DEM ds is passed as an argument)
+    #egm96_ds = gdal.Open(os.path.join(os.path.dirname(ag.__file__), "etc", "WW15MGH_copy.tif"))  # File is located in the software directory
+    egm96_ds = gdal.Open(geoid)
+    
+    # Setup an in-memory raster using the DEM as a template
+    driver = gdal.GetDriverByName("MEM")
+    resamp_ds = driver.Create("", dem_ds.RasterXSize, dem_ds.RasterYSize, 1, gdal.GDT_Float32)
+    resamp_ds.SetProjection(dem_ds.GetProjection())
+    resamp_ds.SetGeoTransform(dem_ds.GetGeoTransform())
+
+    # Reproject / resample the EGM96 data to the DEM resolution / space.
+    gdal.ReprojectImage(egm96_ds, resamp_ds, egm96_ds.GetProjection(), dem_ds.GetProjection(), gdal.GRA_Cubic)
+
+    # Add (subtract) the difference between EGM96 and WGS84 and return the resulting DEM.
+    egm96 = resamp_ds.ReadAsArray()
+    dem = dem_ds.ReadAsArray().astype(np.float32)
+    dem[dem != -32768] += egm96[dem != -32768]
+
+    # re-write DEM
+    dem_ds.GetRasterBand(1).WriteArray(dem)
+    del dem_ds
     
