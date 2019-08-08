@@ -275,7 +275,7 @@ class nts:
         miny = max(bbox[1,0], 40.0)
         maxx = min(bbox[0,1], -48.0)
         maxy = min(bbox[1,1], 88.0)
-        
+
         if ((maxx < minx) or (maxy < miny)):
             raise Exception("Bounds provided may be outside the NTS grid")
         
@@ -293,7 +293,7 @@ class nts:
             for x in range(mint[0], maxt[0] + 1):
                 for y in range(mint[1], maxt[1] + 1):
                     tileid = idfunc(np.array([x,y]))
-                    if(tileid[0] is not None):
+                    if(np.atleast_1d(tileid)[0] is not None):
                         self.idlist.append(tileid)
                         
 
@@ -357,7 +357,7 @@ class nts:
         result = N._bybbox(bbox, atscale)
         return(result)
         
-    def _bbox(ntsid):
+    def _bbox(self, ntsid):
         if len(np.array(ntsid)) > 1:
             out = list()
             for i in ntsid:
@@ -388,6 +388,7 @@ class nts:
         N = cls()
         result = N._bbox(ntsid)
         return(result)
+        
     
 def valid_nts_tiles(tilesfile, return_50k = False):
     
@@ -401,5 +402,72 @@ def valid_nts_tiles(tilesfile, return_50k = False):
     
     return(out)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
