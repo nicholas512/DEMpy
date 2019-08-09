@@ -648,7 +648,7 @@ def get_spatial_extent(raster_path, target_EPSG = 4326, tol=0.1):
     return(ext)
     
 def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED", 
-                                    vrt_only=False):
+                                    vrt_only=False, **kwargs):
     """ Generate DEM mosaic covering a extent
     
     Parameters
@@ -689,7 +689,7 @@ def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED",
     elif product.upper() == "SRTM":
         tiles = SRTM_tiles_from_extent(ext)
     elif product.upper() == "CDED":
-        tiles = NTS_tiles_from_extent(ext)
+        tiles = NTS_tiles_from_extent(ext, **kwargs)
     else:
         raise NotImplementedError
     
