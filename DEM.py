@@ -24,7 +24,16 @@ import urllib.request
 from os import path, remove, listdir, makedirs
 from .NTS import nts
 
+def get_tile_path_CDEM(NTS):
+    NTS = NTS.upper()[:4]
+    basepath = "http://ftp.geogratis.gc.ca/pub/nrcan_rncan/elevation/cdem_mnec"
+    
+    DEM_name = "cdem_dem_{}_tif.zip".format(NTS) 
+    ftp_path = "{}/{}/{}".format(basepath, NTS[:3], DEM_name)
 
+    return(ftp_path)
+    
+    
 def get_tile_path_CDED(NTS):
     """ Get FTP path for a CDED NTS tile 
     
@@ -282,8 +291,9 @@ def download_and_unzip_SRTM(url, destfile, exdir, rmzip=True):
         os.remove(destfile)
     return(True)
     
-def get_tile_path_CDEM():
-    raise NotImplementedError()
+
+
+    
     
 def download_single_DEM(DEM_id, DEM_dir, replace=False, product="NED"):
     """ Download a DEM tile 
@@ -315,6 +325,8 @@ def download_single_DEM(DEM_id, DEM_dir, replace=False, product="NED"):
         ftp_path = get_tile_path_CDED(NTS = DEM_id)
     elif product.upper() == "SRTM":
         ftp_path = get_tile_path_SRTM(name = DEM_id)
+    elif product.upper() == "CDEM":
+        ftp_path = get_tile_path_CDEM(NTS = DEM_id)
     else:
         raise NotImplementedError("DEM product not implemented")
     
@@ -343,8 +355,10 @@ def download_single_DEM(DEM_id, DEM_dir, replace=False, product="NED"):
         
     # If an appropriate file was downloaded, return the corresponding file paths
     if output:
+        if product == "CDEM":
+            destdir = os.path.join(dest_dir, "cdem_dem_{}_tif".format(DEM_id[:4]))
         pattern_dict = {"CDED" : "dem[ew_].*[td][ie][fm]$",
-                        "CDEM" : "dem[ew_].*[td][ie][fm]$",
+                        "CDEM" : "cdem_dem_".format(DEM_id[:4]),
                         "CDSM" : ".*_cdsm_final_[ew]\\.tif",
                         "NED"  : "flt$",
                         "SRTM" : "hgt$",
@@ -690,6 +704,8 @@ def create_DEM_mosaic_from_extent(ext, dstfile, DEM_dir, product="CDED",
         tiles = SRTM_tiles_from_extent(ext)
     elif product.upper() == "CDED":
         tiles = NTS_tiles_from_extent(ext, **kwargs)
+    elif product.upper() == "CDEM":
+        tiles = NTS_tiles_from_extent(ext, scale=1)
     else:
         raise NotImplementedError
     
