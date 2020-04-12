@@ -22,7 +22,7 @@ If you are interested in the DEM mosaicking functionality, you'll need the GDAL 
 
 Using docker
 ^^^^^^^^^^^^
-Alternately, you can use docker to run the scripts and avoid having to compile GDAL. This is only important if you want to run the mosaicking functions. To do so, run the following from the build context /::
+Alternately, you can use docker to run the scripts and avoid having to compile GDAL. This is only important if you want to run the mosaicking functions. To do so, run the following from within the main DEMpy directory.
 
 
 .. code-block:: bash
