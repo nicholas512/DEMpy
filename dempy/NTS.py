@@ -8,8 +8,12 @@
 import numpy as np
 import pandas as pd
 
+print("\n\n ** Code for NTS functions ported from R using code from: github.com/paleolimbot/rcanvec **\n")
 
 class nts:
+    """
+    Main class for handling NTS tile sheets 
+    """
     MAP_SERIES_N_OF_80 = np.array(("910", "780", "560", "340", "120", 
                                     None, "781", "561", "341", "121")).reshape(2,5)
     
@@ -401,73 +405,3 @@ def valid_nts_tiles(tilesfile, return_50k = False):
         out = t250k
     
     return(out)
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

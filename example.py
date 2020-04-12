@@ -1,5 +1,7 @@
-from DEMpy.DEM import *
+from dempy.DEM import *
+from os import path
 
+DEM_directory = path.join(path.expanduser("~"), "dempy")
 
 ''' Find URL of DEM tiles '''
 # USGS NED (30m, north america)
@@ -11,7 +13,7 @@ print(get_tile_path_CDED('075C02'))
 
 
 ''' download single DEM tiles by ID ''' 
-DEM_directory = "C:/DEM/"
+
 
 # CDED
 download_single_DEM('075C02', DEM_directory, product="CDED")

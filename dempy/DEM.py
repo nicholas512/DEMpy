@@ -5,24 +5,28 @@ variety of providers
 code: Nick Brown, 2018, Water Survey of Canada
 """
 
-import gdal
 import glob
 import itertools
-import ogr
-import osr
-import os
-import re
-import tarfile
-import zipfile
-
-import requests
 import netrc
-
 import numpy as np
+import re
+import requests
+import tarfile
 import urllib.request
+import zipfile
 
 from os import path, remove, listdir, makedirs
 from .NTS import nts
+
+try:
+    import osr
+    import gdal
+except ModuleNotFoundError as e:
+    print('Unable to import osr / gdal. Mosaic functionality will not be possible')
+    print(e)
+
+
+
 
 def get_tile_path_CDEM(NTS):
     NTS = NTS.upper()[:4]
@@ -288,7 +292,7 @@ def download_and_unzip_SRTM(url, destfile, exdir, rmzip=True):
     with zipfile.ZipFile(destfile, "r") as zipf:
         zipf.extractall(exdir)
     if rmzip:
-        os.remove(destfile)
+        remove(destfile)
     return(True)
     
 
@@ -342,7 +346,7 @@ def download_single_DEM(DEM_id, DEM_dir, replace=False, product="NED"):
     if destfile.endswith("tar.gz"):
         dest_dir = re.sub("\\.tar\\.gz", "", destfile)
     else:
-        dest_dir = os.path.splitext(destfile)[0]
+        dest_dir = path.splitext(destfile)[0]
 
     # Check to see if file already exists
     if not replace and path.isdir(dest_dir):
@@ -356,7 +360,7 @@ def download_single_DEM(DEM_id, DEM_dir, replace=False, product="NED"):
     # If an appropriate file was downloaded, return the corresponding file paths
     if output:
         if product == "CDEM":
-            destdir = os.path.join(dest_dir, "cdem_dem_{}_tif".format(DEM_id[:4]))
+            destdir = path.join(dest_dir, "cdem_dem_{}_tif".format(DEM_id[:4]))
         pattern_dict = {"CDED" : "dem[ew_].*[td][ie][fm]$",
                         "CDEM" : "cdem_dem_".format(DEM_id[:4]),
                         "CDSM" : ".*_cdsm_final_[ew]\\.tif",
@@ -450,35 +454,6 @@ def download_multiple_DEM(DEM, DEM_dir, product="NED"):
     files = [f for f in files if f is not None]
     files = [dem for sublist in files for dem in sublist]
     return(files)
-        
-def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", 
-                        vrt_only=False, format="GTiff"):
-    """ Create a Mosaic from a list of DEM urls or NTS tiles. Missing tiles will
-    be downloaded """
-    
-    
-    files = download_multiple_DEM(DEM, DEM_dir, product)
-    
-    # build VRT
-    VRT_path = path.join(path.dirname(dstfile), "tmp.VRT")
-    VRT = gdal.BuildVRT(VRT_path, files)
-    VRT.FlushCache()
-    VRT = None
-    
-    # return VRT-only if desired
-    if vrt_only:
-        return(VRT_path)
-    
-    # set warp parameters
-
-    ds = gdal.Translate(dstfile, VRT_path, format=format)
-
-    ds.FlushCache()
-    ds = None
-    
-    remove(VRT_path)
-    return(dstfile)
-    
 def SRTM_tiles_from_extent(ext):
     return degree_tiles_from_extent(ext, SRTM_tile_name, yoff=-1)
 
@@ -595,6 +570,40 @@ def NTS_tiles_from_extent(ext, scale=1):
     tile_list = [''.join(tile) for tile in tiles]
     
     return(tile_list)
+
+# ==========================
+## Mosaic functionality
+# ==========================
+        
+def create_DEM_mosaic(DEM, DEM_dir, dstfile, product="NED", 
+                        vrt_only=False, format="GTiff"):
+    """ Create a Mosaic from a list of DEM urls or NTS tiles. Missing tiles will
+    be downloaded """
+    
+    
+    files = download_multiple_DEM(DEM, DEM_dir, product)
+    
+    # build VRT
+    VRT_path = path.join(path.dirname(dstfile), "tmp.VRT")
+    VRT = gdal.BuildVRT(VRT_path, files)
+    VRT.FlushCache()
+    VRT = None
+    
+    # return VRT-only if desired
+    if vrt_only:
+        return(VRT_path)
+    
+    # set warp parameters
+
+    ds = gdal.Translate(dstfile, VRT_path, format=format)
+
+    ds.FlushCache()
+    ds = None
+    
+    remove(VRT_path)
+    return(dstfile)
+    
+
 
 def get_spatial_extent(raster_path, target_EPSG = 4326, tol=0.1):
     """ Get the spatial extent of a raster file. 
@@ -744,7 +753,7 @@ def egm96_to_wgs84_heights(dem, geoid):
     """
     dem_ds = gdal.Open(dem, gdal.GA_Update)
     # Load the EGM96 dataset (DEM ds is passed as an argument)
-    #egm96_ds = gdal.Open(os.path.join(os.path.dirname(ag.__file__), "etc", "WW15MGH_copy.tif"))  # File is located in the software directory
+    #egm96_ds = gdal.Open(path.join(path.dirname(ag.__file__), "etc", "WW15MGH_copy.tif"))  # File is located in the software directory
     egm96_ds = gdal.Open(geoid)
     
     # Setup an in-memory raster using the DEM as a template
