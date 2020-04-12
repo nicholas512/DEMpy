@@ -8,5 +8,4 @@ setup(name='dempy',
       packages=['dempy'], 
       install_requires=[
                         'numpy',
-                        'pandas',
                         'requests'])

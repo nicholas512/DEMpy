@@ -6,7 +6,6 @@
 # Ported from R using code from: github.com/paleolimbot/rcanvec (/R/ntstiles.R)
 
 import numpy as np
-import pandas as pd
 
 print("\n\n ** Code for NTS functions ported from R using code from: github.com/paleolimbot/rcanvec **\n")
 

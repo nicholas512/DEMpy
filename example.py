@@ -33,4 +33,5 @@ ext = {'ymin':53, 'ymax': 54, 'xmin' : -120, 'xmax' : -117}
 print(NTS_tiles_from_extent(ext, scale=1)) # 250k
 print(NTS_tiles_from_extent(ext, scale=2)) # 50k
 
-create_DEM_mosaic_from_extent(ext=ext, dstfile="C:/DEM/DEM_mosaic.tif", DEM_dir=DEM_directory, product='CDED', scale=1)
+new_file = path.join(DEM_directory, "DEM_mosaic.tif")
+create_DEM_mosaic_from_extent(ext=ext, dstfile=new_file, DEM_dir=DEM_directory, product='CDED', scale=1)
