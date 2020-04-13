@@ -16,7 +16,7 @@ To install DEMpy, download the package and navigate to the installation director
 .. code-block:: bash
 
     cd DEMpy
-    python setup.py
+    python setup.py install
 
 If you are interested in the DEM mosaicking functionality, you'll need the GDAL libraries and python wrappers. These can be difficult to set up on Windows, but I suggest using the terrific resources from `<http://www.gisinternals.com/archive.php>`_ and  `<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_ 
 
